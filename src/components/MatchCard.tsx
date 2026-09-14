@@ -1,14 +1,18 @@
 import { SPECIAL_CONDITION_LABELS, type Assignment, type GhostRequest, type Location } from '../types';
 
+/** Спецзначение в select для пункта «Вернуть авто-решение» — не может совпасть с id места. */
+const REVERT_TO_AUTO_VALUE = '__auto__';
+
 interface Props {
   request: GhostRequest;
   assignment: Assignment | undefined;
   locations: Location[];
   onManualAssign: (requestId: string, locationId: string | null) => void;
+  onRevertToAuto: (requestId: string) => void;
   onRemove: (requestId: string) => void;
 }
 
-export function MatchCard({ request, assignment, locations, onManualAssign, onRemove }: Props) {
+export function MatchCard({ request, assignment, locations, onManualAssign, onRevertToAuto, onRemove }: Props) {
   const assignedLocation = locations.find((l) => l.id === assignment?.locationId) ?? null;
   const isResettled = !!assignedLocation;
   const hasViolations = (assignment?.violations.length ?? 0) > 0;
@@ -62,9 +66,19 @@ export function MatchCard({ request, assignment, locations, onManualAssign, onRe
           Переселить вручную в:{' '}
           <select
             value={assignment?.locationId ?? ''}
-            onChange={(e) => onManualAssign(request.id, e.target.value || null)}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === REVERT_TO_AUTO_VALUE) {
+                onRevertToAuto(request.id);
+              } else {
+                onManualAssign(request.id, value || null);
+              }
+            }}
           >
             <option value="">— без места —</option>
+            {assignment?.source === 'manual' && (
+              <option value={REVERT_TO_AUTO_VALUE}>↺ Вернуть авто-решение</option>
+            )}
             {locations.map((loc) => (
               <option key={loc.id} value={loc.id}>
                 {loc.name}

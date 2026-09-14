@@ -50,6 +50,7 @@ export default function App() {
                     onManualAssign={(requestId, locationId) =>
                       dispatch({ type: 'MANUAL_ASSIGN', requestId, locationId })
                     }
+                    onRevertToAuto={(requestId) => dispatch({ type: 'REVERT_TO_AUTO', requestId })}
                     onRemove={(id) => dispatch({ type: 'REMOVE_REQUEST', id })}
                   />
                 ))}

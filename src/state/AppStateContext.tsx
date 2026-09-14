@@ -18,6 +18,7 @@ type Action =
   | { type: 'ADD_LOCATION'; location: Location }
   | { type: 'REMOVE_LOCATION'; id: string }
   | { type: 'MANUAL_ASSIGN'; requestId: string; locationId: string | null }
+  | { type: 'REVERT_TO_AUTO'; requestId: string }
   | { type: 'SET_TODAY'; today: string }
   | { type: 'RESET_TO_SEED' }
   | { type: 'CLEAR_ALL' }
@@ -87,7 +88,7 @@ function loadPersisted(): AppState | null {
   }
 }
 
-function reducer(state: AppState, action: Action): AppState {
+export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'RECOMPUTE':
       return { ...state, assignments: recomputeAutoAssignments(state) };
@@ -139,6 +140,16 @@ function reducer(state: AppState, action: Action): AppState {
       }
       const next = { ...state, assignments: [...otherAssignments, newAssignment] };
       // ручные назначения зафиксированы; пересчитываем только оставшиеся auto-заявки
+      return { ...next, assignments: recomputeAutoAssignments(next) };
+    }
+    case 'REVERT_TO_AUTO': {
+      // снимаем ручную фиксацию полностью (а не оставляем manual+null) — иначе
+      // заявка навсегда выпадает из recomputeAutoAssignments, даже когда позже
+      // освобождается подходящее место. Баг найден при внешнем аудите.
+      const next = {
+        ...state,
+        assignments: state.assignments.filter((a) => a.requestId !== action.requestId),
+      };
       return { ...next, assignments: recomputeAutoAssignments(next) };
     }
     case 'SET_TODAY': {
