@@ -104,6 +104,17 @@ describe('matchGhost', () => {
       expect(result.locationId).toBe('cold');
     }
   });
+
+  it('даёт конкретную причину с числом градусов даже при большой разнице температур, без шаблонной фразы', () => {
+    const request = makeRequest({ favoriteTemp: 30, anxietyLevel: 1 });
+    const location = makeLocation({ ambientTemp: 10 });
+    const result = matchGhost(request, [location], [], today);
+    expect(result.status).toBe('matched');
+    if (result.status === 'matched') {
+      expect(result.reasons).toContain('разница по температуре 20°C — не идеально, но лучший вариант из доступных');
+      expect(result.reasons).not.toContain('подходит по всем ключевым параметрам лучше остальных');
+    }
+  });
 });
 
 describe('evaluateManualChoice', () => {

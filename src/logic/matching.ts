@@ -91,6 +91,8 @@ export function softScore(request: GhostRequest, location: Location): { score: n
     reasons.push('температура почти идеально совпадает');
   } else if (tempDiff <= 5) {
     reasons.push('температура подходит приемлемо');
+  } else {
+    reasons.push(`разница по температуре ${tempDiff}°C — не идеально, но лучший вариант из доступных`);
   }
 
   if (request.specialConditions.includes('lovesDamp')) {
