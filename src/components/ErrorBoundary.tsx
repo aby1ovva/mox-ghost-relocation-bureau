@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { STORAGE_KEY } from '../state/AppStateContext';
 
 interface Props {
   children: ReactNode;
@@ -24,6 +25,19 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ error: null });
   };
 
+  handleResetStorage = () => {
+    // "Попробовать снова" выше не помогает, если причина ошибки — повреждённые
+    // данные в localStorage: React-состояние сбрасывается, но при следующем
+    // рендере читается тот же битый JSON, и приложение падает снова. Эта кнопка
+    // явно очищает сохранённые данные и перезагружает страницу с чистого листа.
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // localStorage может быть недоступен — тогда просто перезагружаем страницу
+    }
+    window.location.reload();
+  };
+
   render() {
     if (this.state.error) {
       return (
@@ -31,7 +45,8 @@ export class ErrorBoundary extends Component<Props, State> {
           <h2>Что-то пошло не так</h2>
           <p>
             Бюро переселения столкнулось с неожиданной ошибкой и не смогло отрисовать этот
-            экран. Попробуйте вернуться назад — данные в хранилище не повреждены.
+            экран. Попробуйте вернуться назад. Если ошибка повторяется — скорее всего,
+            повреждены сохранённые данные; кнопка ниже сбросит их и начнёт заново.
           </p>
           <details>
             <summary>Техническая информация</summary>
@@ -39,6 +54,9 @@ export class ErrorBoundary extends Component<Props, State> {
           </details>
           <button type="button" onClick={this.handleReset}>
             Попробовать снова
+          </button>
+          <button type="button" className="danger" onClick={this.handleResetStorage}>
+            Сбросить сохранённые данные и начать заново
           </button>
         </div>
       );

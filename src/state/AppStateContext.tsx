@@ -24,7 +24,8 @@ type Action =
   | { type: 'CLEAR_ALL' }
   | { type: 'LOAD'; state: AppState };
 
-const STORAGE_KEY = 'mox-ghost-bureau-state-v1';
+/** Экспортируется, чтобы ErrorBoundary мог предложить сброс повреждённых персистентных данных. */
+export const STORAGE_KEY = 'mox-ghost-bureau-state-v1';
 
 function recomputeAutoAssignments(state: AppState): Assignment[] {
   const today = new Date(state.today);
