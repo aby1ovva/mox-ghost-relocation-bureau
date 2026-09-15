@@ -62,6 +62,24 @@ export function hardViolations(
   return violations;
 }
 
+/**
+ * Сколько мест проходят жёсткие ограничения для заявки прямо сейчас (без учёта
+ * дедлайна — вызывающий код применяет её только к уже успешно расселённым
+ * заявкам, для которых дедлайн заведомо не просрочен). Используется отчётом
+ * для критерия «мало альтернатив»: 0 или 1 — заявка держится на одном месте
+ * без запасного варианта.
+ */
+export function countViableLocations(
+  request: GhostRequest,
+  locations: Location[],
+  assignments: Assignment[],
+  excludeRequestId?: string,
+): number {
+  return locations.filter(
+    (location) => hardViolations(request, location, assignments, excludeRequestId).length === 0,
+  ).length;
+}
+
 /** Мягкий скоринг: чем меньше, тем лучше подходит место. */
 export function softScore(request: GhostRequest, location: Location): { score: number; reasons: string[] } {
   let score = 0;

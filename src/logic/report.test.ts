@@ -43,7 +43,9 @@ describe('buildReport', () => {
     const assignments: Assignment[] = [
       { requestId: 'a', locationId: 'l1', source: 'auto', reasons: [], violations: [] },
     ];
-    const report = buildReport(requests, [loc('l1')], assignments);
+    // Два свободных места без спецусловий у заявки — 'a' не должна попасть в
+    // "мало альтернатив", тест здесь проверяет только счётчики resettled/unresettled.
+    const report = buildReport(requests, [loc('l1'), loc('l2')], assignments);
     expect(report.resettledCount).toBe(1);
     expect(report.unresettledCount).toBe(1);
     expect(report.problematicRequests).toEqual([
@@ -57,10 +59,37 @@ describe('buildReport', () => {
       { requestId: 'a', locationId: 'l1', source: 'auto', reasons: [], violations: [] },
       { requestId: 'b', locationId: 'l1', source: 'manual', reasons: [], violations: ['переполнено'] },
     ];
-    const report = buildReport(requests, [loc('l1', 1)], assignments);
+    // l2 и l3 — два свободных запасных варианта для 'a', чтобы у неё было >1
+    // альтернативы и тест проверял только перегрузку l1, не пересекаясь с
+    // отдельным тестом на "мало альтернатив".
+    const report = buildReport(requests, [loc('l1', 1), loc('l2', 2), loc('l3', 2)], assignments);
     expect(report.overloadedLocations).toEqual([
       { locationId: 'l1', name: 'l1', occupied: 2, capacity: 1 },
     ]);
-    expect(report.problematicRequests[0].reason).toMatch(/нарушает условия/);
+    expect(report.problematicRequests).toEqual([
+      { requestId: 'b', name: 'b', reason: expect.stringMatching(/нарушает условия/) },
+    ]);
+  });
+
+  it('помечает проблемной заявку без нарушений, но с единственным подходящим местом', () => {
+    const requests = [req('a')];
+    // Только l1 подходит по вместимости (1), l2 уже занято другой заявкой — запасного варианта нет.
+    const assignments: Assignment[] = [
+      { requestId: 'a', locationId: 'l1', source: 'auto', reasons: [], violations: [] },
+      { requestId: 'other', locationId: 'l2', source: 'auto', reasons: [], violations: [] },
+    ];
+    const report = buildReport(requests, [loc('l1', 1), loc('l2', 1)], assignments);
+    expect(report.problematicRequests).toEqual([
+      { requestId: 'a', name: 'a', reason: expect.stringMatching(/мало альтернатив/) },
+    ]);
+  });
+
+  it('не помечает проблемной заявку, у которой есть запасные подходящие места', () => {
+    const requests = [req('a')];
+    const assignments: Assignment[] = [
+      { requestId: 'a', locationId: 'l1', source: 'auto', reasons: [], violations: [] },
+    ];
+    const report = buildReport(requests, [loc('l1', 2), loc('l2', 2)], assignments);
+    expect(report.problematicRequests).toEqual([]);
   });
 });

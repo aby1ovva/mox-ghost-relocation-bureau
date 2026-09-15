@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Assignment, GhostRequest, Location } from '../types';
-import { evaluateManualChoice, matchGhost, occupancyOf } from './matching';
+import { countViableLocations, evaluateManualChoice, matchGhost, occupancyOf } from './matching';
 
 const today = new Date('2026-09-13T00:00:00');
 
@@ -130,6 +130,29 @@ describe('evaluateManualChoice', () => {
     ];
     const violations = evaluateManualChoice(request, location, assignments, today);
     expect(violations.some((v) => v.includes('переполнено'))).toBe(true);
+  });
+});
+
+describe('countViableLocations', () => {
+  it('возвращает 0, если ни одно место не проходит жёсткие ограничения', () => {
+    const request = makeRequest({ specialConditions: ['needsAttic'] });
+    const locations = [makeLocation({ id: 'l1', hasAttic: false }), makeLocation({ id: 'l2', hasAttic: false })];
+    expect(countViableLocations(request, locations, [])).toBe(0);
+  });
+
+  it('считает только места без нарушений, исключая текущее назначение заявки', () => {
+    const request = makeRequest();
+    const locations = [
+      makeLocation({ id: 'l1', capacity: 1 }),
+      makeLocation({ id: 'l2', capacity: 1 }),
+      makeLocation({ id: 'l3', capacity: 1 }),
+    ];
+    const assignments: Assignment[] = [
+      { requestId: 'r1', locationId: 'l1', source: 'auto', reasons: [], violations: [] },
+      { requestId: 'other', locationId: 'l2', source: 'auto', reasons: [], violations: [] },
+    ];
+    // l1 — своё текущее место (исключается из подсчёта занятости), l2 — занято другим, l3 — свободно
+    expect(countViableLocations(request, locations, assignments, 'r1')).toBe(2);
   });
 });
 

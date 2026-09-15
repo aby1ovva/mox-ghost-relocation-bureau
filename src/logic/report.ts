@@ -1,5 +1,5 @@
 import type { Assignment, GhostRequest, Location } from '../types';
-import { occupancyOf } from './matching';
+import { countViableLocations, occupancyOf } from './matching';
 
 export interface ProblematicRequest {
   requestId: string;
@@ -42,6 +42,20 @@ export function buildReport(
           name: request.name,
           reason: `ручное размещение нарушает условия: ${assignment.violations.join('; ')}`,
         });
+      } else {
+        // Заявка расселена без нарушений — но если у неё нет запасного варианта,
+        // это тоже проблемность отдельного рода: малейшее изменение (новая заявка,
+        // занятое место) может выбить её из подбора. Текущее место всегда входит
+        // в подсчёт (иначе заявка не была бы здесь без нарушений), так что
+        // viable === 0 в этой ветке физически недостижимо — порог только <= 1.
+        const viable = countViableLocations(request, locations, assignments, request.id);
+        if (viable <= 1) {
+          problematicRequests.push({
+            requestId: request.id,
+            name: request.name,
+            reason: 'мало альтернатив: на момент подбора подходило только текущее место, запасного нет',
+          });
+        }
       }
     } else {
       problematicRequests.push({
